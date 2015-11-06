@@ -1,0 +1,6 @@
+   bold     \e[0;31m   # red
+  text      \e[39;49m
+ default
+ italic     \e[0;32m   # green
+  underline \e[0;34m   # blue
+
