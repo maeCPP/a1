@@ -15,6 +15,10 @@
 
 using namespace std;
 
+/**
+ * Returns true if string s (which represents a tag) comprises of 
+ * only alphanumeric characters; returns false otherwise.
+ */
 bool is_valid_tag(string s) {
 
     for (size_t i = 0; i < s.size(); i++) {
@@ -24,23 +28,23 @@ bool is_valid_tag(string s) {
     return true;
 }
 
-
-int main(int argc, char* argv[]) {
+/**
+ * Checks command-line arguments for a configuration file name.  If
+ * none provided, uses the default "config.txt" file.  Opens the 
+ * config file and parses the file line-by-line to read in valid
+ * tags and codes into a map.
+ *
+ * Returns a map of tags and codes upon success.
+ */
+map<string, string> load_config(int argc, char* argv[]) {
 
     string config_file;
-    string line, word;
-    string tag, code;
-    map<string, string> config_map;
-    vector<string> v;
+    string line;
+    string tag;                         // must be all alphanumeric
+    string code;                        
+    map<string, string> config_map; 
 
-    smatch m;
-
-    //regex re1(R"((<(.+)>)(\s*[a-z]+\s*)(</(.+)>))");
-    regex re1(R"(<(.+?)>)");
-    regex re2(R"(\\e)");
-
-    // bool textflag = 0;
-
+    // check number of arguments
     if (argc == 1) {
         config_file = "config.txt";
     } else {
@@ -55,6 +59,7 @@ int main(int argc, char* argv[]) {
         exit(1);                    
     }
 
+    // parse config file, line by line, for valid tags and codes
     while (getline(fs, line)) {
 
         istringstream iss( line );
@@ -64,25 +69,47 @@ int main(int argc, char* argv[]) {
             if (is_valid_tag(tag)) {
                 config_map.insert ( pair<string, string>(tag, code) );
             } else {
-                cerr << "\n\nERROR:  " << tag << " is an invalid tag." << endl;
+                cerr << "\n\nIgnoring invalid tag: " << tag << ".\n\n";
             }
         }
     }
+    
+    // print out config_map for testing
+    // 
+    // for (auto it = config_map.begin(); it != config_map.end(); ++it) {
+    //     cout << it->first << "\t => " << it->second << '\n';
+    // }
 
-    /*
-    for (auto it = config_map.begin(); it != config_map.end(); ++it) {
-        cout << it->first << "\t => " << it->second << '\n';
-    }*/
-
+    // check that config file contains the "text" tag
     auto it = config_map.find("text");
     if (it == config_map.end()) {
         cerr << "\n\nERROR:  Config file does not contain 'text' tag.  Exiting program." << endl;
         exit(1);
     }
 
+    return config_map;
+}
+
+
+int main(int argc, char* argv[]) {
+
+    string line, word;
+    map<string, string> config_map;
+    vector<string> v;
+    smatch m;
+    //regex re1(R"((<(.+)>)(\s*[a-z]+\s*)(</(.+)>))");
+    regex re1(R"(<(.+?)>)");
+    regex re2(R"(\\e)");
+
+    // bool textflag = 0;
+
+    // load configuration file
+    config_map = load_config(argc, argv);
+
     cin >> word;
 
     /* TO-DO:  handle case where <text> is not followed by space */
+
     if (word.substr(0,6) != "<text>") {
         cerr << "\n\nERROR:  Input text does not start with <text> tag.  Exiting program." << endl;
          exit(1);
@@ -90,7 +117,6 @@ int main(int argc, char* argv[]) {
         v.push_back("text");
     }
 
-    
 
     /* TO-DO:  handle case where input text does not end with </text> tag */
 
