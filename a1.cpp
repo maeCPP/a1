@@ -190,19 +190,27 @@ int main(int argc, char* argv[]) {
 
                 if (tagname == "text") {
 
-                // check that <text> tag not duplicated
-                if (ot_flag) {
-                    cerr << "\033[39;49m\n\nERROR:  duplicate <text> tag.  Exiting program." << endl;
-                    exit(1);
-                }
-                ot_flag = true;
+                    // check that it is found on first line
+                    if (ln != 1) {
+                        cerr << "\033[39;49m\n\nERROR:  <text> tag not found on line 1.  Exiting program." << endl;
+                        exit(1);
+                    }
 
-                // check that the <text> tag is not preceded by non white space characters
-                if (!is_white_space(m.prefix())) {
-                    cerr << "\033[39;49m\n\nERROR:  Input text does not start with <text> tag.  Exiting program." << endl;
-                    exit(1);
-                }
-            } else {
+                    if (!is_white_space(m.prefix())) {
+                        cerr << "\033[39;49m\n\nERROR:  Input text does not start with <text> tag.  Exiting program." << endl;
+                        exit(1);
+                    }
+                    
+                    // check that <text> tag not duplicated
+                    if (ot_flag) {
+                        cerr << "\033[39;49m\n\nERROR:  duplicate <text> tag.  Exiting program." << endl;
+                        exit(1);
+                    }
+                    ot_flag = true;
+
+                    // check that the <text> tag is not preceded by non white space characters
+                    
+                } else {
             
             // print everything before the tag unless it is the <text> tag 
             //if (tagname != "text" ) {
