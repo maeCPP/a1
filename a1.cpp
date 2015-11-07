@@ -28,6 +28,15 @@ bool is_valid_tag(string s) {
     return true;
 }
 
+bool is_white_space(string s) {
+
+    for (size_t i = 0; i < s.size(); i++) {
+        if (!isspace(s[i]))
+            return false;
+    }
+    return true;
+}
+
 /**
  * Checks command-line arguments for a configuration file name.  If
  * none provided, uses the default "config.txt" file.  Opens the 
@@ -52,7 +61,6 @@ map<string, string> load_config(int argc, char* argv[]) {
     }
       
     ifstream fs(config_file);
-
     // config file cannot be opened
     if (!fs) {                       
         cerr << "\n\nERROR:  Cannot open file " << argv[1] << ".  Exiting program." << endl;
@@ -65,7 +73,6 @@ map<string, string> load_config(int argc, char* argv[]) {
         istringstream iss( line );
 
         if (iss >> tag >> code) {
-
             if (is_valid_tag(tag)) {
                 config_map.insert ( pair<string, string>(tag, code) );
             } else {
@@ -74,12 +81,6 @@ map<string, string> load_config(int argc, char* argv[]) {
         }
     }
     
-    // print out config_map for testing
-    // 
-    // for (auto it = config_map.begin(); it != config_map.end(); ++it) {
-    //     cout << it->first << "\t => " << it->second << '\n';
-    // }
-
     // check that config file contains the "text" tag
     auto it = config_map.find("text");
     if (it == config_map.end()) {
@@ -100,8 +101,9 @@ int main(int argc, char* argv[]) {
     //regex re1(R"((<(.+)>)(\s*[a-z]+\s*)(</(.+)>))");
     regex re1(R"(<(.+?)>)");
     regex re2(R"(\\e)");
-
-    // bool textflag = 0;
+    bool ot_flag = false;               // true if open text tag  <text>  found
+    bool ct_flag = false;               // true if close text tag </text> found
+    size_t ln = 1;                      // line number
 
     // load configuration file
     config_map = load_config(argc, argv);
