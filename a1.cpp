@@ -28,6 +28,15 @@ bool is_valid_tag(string s) {
     return true;
 }
 
+bool is_white_space(string s) {
+
+    for (size_t i = 0; i < s.size(); i++) {
+        if (!isspace(s[i]))
+            return false;
+    }
+    return true;
+}
+
 /**
  * Checks command-line arguments for a configuration file name.  If
  * none provided, uses the default "config.txt" file.  Opens the 
@@ -42,7 +51,7 @@ map<string, string> load_config(int argc, char* argv[]) {
     string line;
     string tag;                         // must be all alphanumeric
     string code;                        
-    map<string, string> config_map; 
+    map<string, string> config_map;
 
     // check number of arguments
     if (argc == 1) {
@@ -79,7 +88,7 @@ map<string, string> load_config(int argc, char* argv[]) {
     // for (auto it = config_map.begin(); it != config_map.end(); ++it) {
     //     cout << it->first << "\t => " << it->second << '\n';
     // }
-
+    
     // check that config file contains the "text" tag
     auto it = config_map.find("text");
     if (it == config_map.end()) {
@@ -100,40 +109,53 @@ int main(int argc, char* argv[]) {
     //regex re1(R"((<(.+)>)(\s*[a-z]+\s*)(</(.+)>))");
     regex re1(R"(<(.+?)>)");
     regex re2(R"(\\e)");
+    bool ot_flag = false;               // true if open text tag  <text>  found
+    bool ct_flag = false;               // true if close text tag </text> found
 
-    // bool textflag = 0;
+    //cout << ot_flag << ' ' << ct_flag << endl;
 
     // load configuration file
     config_map = load_config(argc, argv);
 
-    cin >> word;
-
-    /* TO-DO:  handle case where <text> is not followed by space */
-
-    if (word.substr(0,6) != "<text>") {
-        cerr << "\n\nERROR:  Input text does not start with <text> tag.  Exiting program." << endl;
-         exit(1);
-    } else {
-        v.push_back("text");
-    }
-
-
-    /* TO-DO:  handle case where input text does not end with </text> tag */
-
-    /* TO-DO:  handle case where <text> or </text> occur more than once */
-
+    size_t ln = 1;
     while (getline(cin, line)) {
+    
+    /* TO-DO:  handle case where </text> occur more than once */
 
-    /* TO-DO:  preserve empty new lines */
+        // preserve lines with only white space
+        //if (is_white_space(line)) {
+        //    cout << "line number: " << ln << endl;
+        //}
+        //cout << "line number: " << ln << endl;
+
 
         for (auto it = line.cbegin(), end = line.cend(); regex_search(it, end, m, re1); it = m.suffix().first) 
         {
-            
-            cout << m.prefix();                         // print everything before the tag
-
             string tagname = m.str(1);
 
-            if (tagname[0] != '/') {                    // it is a start tag 
+            if (tagname == "text") {
+
+                // check that <text> tag not duplicated
+                if (ot_flag) {
+                    cerr << "\033[39;49m\n\nERROR:  duplicate <text> tag.  Exiting program." << endl;
+                    exit(1);
+                }
+                ot_flag = true;
+
+                // check that the <text> tag is not preceded by non white space characters
+                if (!is_white_space(m.prefix())) {
+                    cerr << "\033[39;49m\n\nERROR:  Input text does not start with <text> tag.  Exiting program." << endl;
+                    exit(1);
+                }
+            } else {
+            
+            // print everything before the tag unless it is the <text> tag 
+            //if (tagname != "text" ) {
+                cout << m.prefix();                      
+            }
+
+            // check if it is a start tag
+            if (tagname[0] != '/') {                 
 
                 auto it = config_map.find(tagname);     // lookup tag in config map
 
@@ -143,51 +165,55 @@ int main(int argc, char* argv[]) {
                     v.push_back(tagname);
                     
                 } else {
-                    cerr << "\n\nERROR:  " << tagname << " is an invalid tag.  Exiting program." << endl;
+                    cerr << "\033[39;49m\n\nERROR:  " << m.str() << " is an invalid tag.  Exiting program." << endl;
                     exit(1);
                 }
 
-            } else {                                    // it is an end tag
+            // otherwise it must be a close tag
+            } else {       
 
-                /*
-                if (tagname == "/text") {
-                    cout << "-------- found /text" << endl;
-                    break;
-                }
-                */
+                // TO-DO:  check that the </text> tag is not followed by any non-white space characters                      
 
-                if (!v.empty()) {
-
-                    /*
-                    cerr << "v = [";
-                    for (auto vit = v.begin(); vit != v.end()-1; ++vit)
-                        cerr << *vit << ", ";
-                    cerr << v.back() << "]" << endl;
-                    */
-                   
-
+                //if (!v.empty()) {
                     
-                    // check if tagname is the last element of the vector
+                    // check if tagname is same as the last element of the vector
                     if (v.back() == tagname.substr(1)) {
 
                         // remove the last tagname from the vector
                         v.pop_back();
+
+                        //if (tagname == "/text") {
+                            //cout << "END:  <" << tagname << ">" << endl;
+                            //ct_flag = true;
+                        //}
                         
                         // revert to previous color   
-                        if (!v.empty()) {
-                            auto it = config_map.find(v.back());
-                            cout << regex_replace(it->second, re2, "\033");
-                            cout << m.suffix() << endl;
-                            
+                        //if (!v.empty()) {
+                        //
+                        auto it = config_map.find(v.back());
+                        cout << regex_replace(it->second, re2, "\033");
+                        
+                        /*
+                        if (!is_white_space(m.suffix())) {
+                            cerr << "\033[39;49m\n\nERROR:  Input text does not end with </text> tag.  Exiting program." << endl;
+                            exit(1);
                         }
+                        */
+                        
+                        //if (!ct_flag) {
+                            cout << m.suffix() << endl;
+                        //}
+                        //}
 
                     } else {                            // invalid nesting of tags
-                        cerr << "\n\nERROR:  Invalid nesting of tags.  Exiting program." << endl;
+                        cerr << "\033[39;49m\n\nERROR:  Invalid nesting of tags.  Exiting program." << endl;
                         break;
                     } 
                 }
-            } 
+            //} 
         } 
+
+        ln++;
     }
 
 }

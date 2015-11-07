@@ -1,0 +1,23 @@
+INVALID TESTS       PASS?       REASON
+---------------------------------------
+invalid-begin       yes
+invalid-char                    line 10 has > with no corresponding <
+invalid-char2                   line 1 has < but no > 
+invalid-end                     many lines of white space
+invalid-match       yes *
+invalid-match2      yes *
+invalid-match3      yes
+invalid-name        yes
+invalid-name2       yes
+
+
+VALID TESTS         MATCH?
+---------------------------
+nested
+nested2
+
+non-nested
+non-nested2
+non-nested3
+
+entity
