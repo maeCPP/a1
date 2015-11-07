@@ -1,0 +1,5 @@
+bold       B
+italic     I
+underline  U
+text       D
+
