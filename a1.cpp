@@ -12,9 +12,8 @@
 #include <map>
 #include <regex>
 #include <cstdlib>
-#define DEFAULT_COLOR "\033[39;49m"
-
-using namespace std;
+#define  DEFAULT_COLOR "\033[39;49m"
+ using   namespace std;
 
 /**
  * Returns true if string s (which represents a tag) comprises of 
@@ -139,18 +138,11 @@ void process_first_word(map<string, string>& config, vector<string>& tags, strin
     }
 }
 
-
 int main(int argc, char* argv[]) 
 {
     string line, word;
     map<string, string> config;
     vector<string> tags;
-
-    smatch m;
-    string prefix, suffix;
-    regex reg_tag(R"(<(.+?)>)");
-    //regex reg_ot(R"(<text>)");
-    //regex reg_ct(R"(</text>)");
 
     bool ot_flag = false;               // true if open text tag  <text>  found
     bool ct_flag = false;               // true if close text tag </text> found
@@ -159,13 +151,16 @@ int main(int argc, char* argv[])
     // load configuration file
     config = load_config(argc, argv);
 
+    // read in the first word and handle any related errors
     process_first_word(config, tags, word, ot_flag);
 
     // process all the rest
     while (getline(cin, line)) 
     {
+        string prefix, suffix;
+        smatch m;
+        regex reg_tag(R"(<(.+?)>)");
         lineNum++;
-        suffix = "";
 
         if (lineNum == 1)
             line = word + line;
