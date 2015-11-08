@@ -53,12 +53,15 @@ void replace_ecode(string& ansi)
 }
 
 /**
- * Checks command-line arguments for a configuration file name.  If
- * none provided, uses the default "config.txt" file.  Opens the 
- * config file and parses the file line-by-line to read in valid
- * tags and codes into a map.
+ * First checks command-line arguments for configuration file name.  If more 
+ * than 2 arguments provided, exits program.  If 2 arguments provided, uses 
+ * the second argument as the configuration file name.  If only 1 argument is
+ * provided, uses the default "config.txt" file.  
+ * 
+ * Opens the config file and parses the file line-by-line to read in valid
+ * tags and codes into a config map.
  *
- * Returns a map of tags and codes upon success.
+ * Returns the map of tags and codes upon success.
  */
 map<string, string> load_config(int argc, char* argv[]) 
 {
@@ -73,8 +76,12 @@ map<string, string> load_config(int argc, char* argv[])
     if (argc == 1) 
     {
         config_file = "config.txt";
-    } else {
+    } else if (argc == 2) 
+    {
         config_file = argv[1];
+    } else {
+        cerr << "\n\nERROR:  Invalid number of command-line arguments.  Exiting program." << endl;
+        exit(1);  
     }
       
     ifstream fs(config_file);
@@ -120,6 +127,16 @@ map<string, string> load_config(int argc, char* argv[])
     return config;
 }
 
+/**
+ * Reads in and processes the first word of input text.  
+ * 
+ * If first word is <text>, adds the tag to the tags vector, sets the ot_flag
+ * to true, strips the word of the <text> tag in case <text> is not followed 
+ * by white space, looks for "text" in the config file to set the appropriate 
+ * ansi color.
+ *
+ * If first word is not <text>, displays an error message and exits program.
+ */
 void process_first_word(map<string, string>& config, vector<string>& tags, string& word, bool& ot_flag) {
 
     // get first word and check that it is the <text> tag
@@ -131,6 +148,7 @@ void process_first_word(map<string, string>& config, vector<string>& tags, strin
          exit(1);
     } else {
         tags.push_back("text");
+        //cout << "\033[0;33m" << "<text> added to vector.  size of vector: " << tags.size() << endl;   
         ot_flag = true;
         word = word.substr(6);
         auto it = config.find("text");
@@ -138,9 +156,162 @@ void process_first_word(map<string, string>& config, vector<string>& tags, strin
     }
 }
 
+/**
+ * Reads in and processes the remaining input text line-by-line and outputs
+ * the text to standard out if no errors found.
+ *
+ * For each line, searches for tags.  If a tag is invalid, exits program.
+ * If tag is valid, looks up the corresponding ansi color in the config map
+ * and changes output color.
+ */
+void process_input(map<string, string>& config, vector<string>& tags, string& word, bool& ot_flag, bool& ct_flag, size_t& lineNum) {
+
+    string line;
+
+    while (getline(cin, line)) 
+    {
+        string prefix, suffix;
+        smatch m;
+        regex reg_tag(R"(<(.+?)>)");
+
+        lineNum++;
+        //cout << lineNum << ": ";
+
+        if (lineNum == 1)
+            line = word + line;
+
+        // no tags found in line
+        if (!regex_search(line, m, reg_tag))
+        {
+            if (!ct_flag)
+                cout << line << endl;
+            
+            if (ct_flag && !is_white_space(line))
+            {
+                cerr << DEFAULT_COLOR << "\n\nERROR2:  Text found after </text> tag.  Exiting program." << endl;
+                exit(1);
+            }
+        }
+
+        for (auto it = line.cbegin(), end = line.cend(); regex_search(it, end, m, reg_tag); it = m.suffix().first) 
+        {
+            prefix = m.prefix();
+            suffix = m.suffix();
+            string tagname = m.str(1);
+
+            cout << prefix;
+            
+            if (tagname[0] != '/')                      // it is a start tag 
+            {
+                //cout << "<" << tagname << ">" << endl;
+                // check that there is no duplication of <text> tag
+                if (tagname == "text" && ot_flag)
+                {  
+                    cerr << DEFAULT_COLOR << "\n\nERROR:  duplicate <text> tag.  Exiting program." << endl;
+                    exit(1);
+                }
+
+                auto it = config.find(tagname);         // lookup tag in config map
+
+                if (it != config.end())                 // tag is found
+                {           
+                    cout << it->second;
+                    tags.push_back(tagname);
+                    //cout << "\033[0;33m" << tagname << " added to vector.  size of vector: " << tags.size() << endl;   
+                } else {
+                    cerr << DEFAULT_COLOR << "\n\nERROR:  <" << tagname << "> is an invalid tag.  Exiting program." << endl;
+                    exit(1);
+                }
+
+                //cout << endl;
+                //for (auto v : tags) {
+                //    cout << "<" << v << ">, ";
+                //}
+                //cout << endl;
+
+            } else {                                    // it is an end tag
+
+                if (tagname == "/text") {
+
+                    //if (ct_flag)
+                    //{
+                    //    cerr << DEFAULT_COLOR << "\n\nERROR:  duplicate </text> tag.  Exiting program." << endl;
+                    //    exit(1);
+                    //}  else {
+                        if (is_white_space(suffix)) 
+                        {
+                                ct_flag = true;
+                        } else {
+                            cerr << DEFAULT_COLOR << "\n\nERROR1:  Text found after </text> tag.  Exiting program." << endl;
+                            exit(1);
+                        }
+                    //}
+                } 
+                    
+
+                
+
+
+
+                //if (ct_flag) {
+                //    cerr << DEFAULT_COLOR << "\n\nERROR99:  Text found after </text> tag.  Exiting program." << endl;
+                //    exit(1);
+                //}
+
+                //if (ct_flag && !is_white_space(suffix))
+                //{
+                //    cerr << DEFAULT_COLOR << "\n\nERROR3:  Text found after </text> tag.  Exiting program." << endl;
+                //    exit(1);
+                //}
+                
+                // check if tagname is the last element of the vector
+                //if (!tags.empty()) {
+                if (tags.back() == tagname.substr(1))
+                {
+                    // remove the last tagname from the vector
+                    tags.pop_back();
+                    //cout << endl << "\033[0;33m" << tagname << " removed from vector.  size of vector: " << tags.size() << endl; 
+                    
+                    // revert to previous color   
+                    if (!tags.empty())
+                    {
+                        auto it = config.find(tags.back());
+                        cout << it->second;                            
+                    }
+
+                } else {                                // invalid nesting of tags
+                    cerr << DEFAULT_COLOR << "\n\nERROR:  Invalid nesting of tags.  Exiting program." << endl;
+                    exit(1);
+                }
+            //}
+            }
+
+            if (ct_flag && !is_white_space(suffix)) 
+            {
+                cout << "line #: " << lineNum << " line size: " << line.length() << " suffix size: " << suffix.length() << endl;
+                cerr << DEFAULT_COLOR << "\n\nERROR77:  Text found after </text> tag.  Exiting program." << endl;
+                exit(1);
+            }
+            
+        } //END: for loop
+
+
+        if (!is_white_space(line) && !ct_flag) 
+            //cout << " ?FLAG? " << ct_flag << " length: " << suffix.length() << "line " << lineNum << "   "<< suffix << endl;
+            cout << suffix << endl;
+
+        //if (!is_white_space(line) && !ct_flag && suffix.length() == 0)
+            //cout << lineNum << ":" << suffix; 
+            //cout << suffix; 
+
+
+    } // END: while loop
+
+}
+
 int main(int argc, char* argv[]) 
 {
-    string line, word;
+    string word;
     map<string, string> config;
     vector<string> tags;
 
@@ -155,95 +326,7 @@ int main(int argc, char* argv[])
     process_first_word(config, tags, word, ot_flag);
 
     // process all the rest
-    while (getline(cin, line)) 
-    {
-        string prefix, suffix;
-        smatch m;
-        regex reg_tag(R"(<(.+?)>)");
-        lineNum++;
-
-        if (lineNum == 1)
-            line = word + line;
-
-        for (auto it = line.cbegin(), end = line.cend(); regex_search(it, end, m, reg_tag); it = m.suffix().first) 
-        {
-            prefix = m.prefix();
-            suffix = m.suffix();
-            string tagname = m.str(1);
-
-            cout << prefix;
-            
-            if (tagname[0] != '/')                      // it is a start tag 
-            {
-                // check that there is no duplication of <text> tag
-                if (tagname == "text" && ot_flag)
-                {  
-                    cerr << DEFAULT_COLOR << "\n\nERROR:  duplicate <text> tag.  Exiting program." << endl;
-                    exit(1);
-                }
-
-                auto it = config.find(tagname);     // lookup tag in config map
-
-                if (it != config.end())             // tag is found
-                {           
-                    cout << it->second;
-                    tags.push_back(tagname);    
-                } else {
-                    cerr << DEFAULT_COLOR << "\n\nERROR:  <" << tagname << "> is an invalid tag.  Exiting program." << endl;
-                    exit(1);
-                }
-
-            } else {                                    // it is an end tag
-
-                if (tagname == "/text") 
-                {
-                    ct_flag = true;
-                }
-                
-                // check if tagname is the last element of the vector
-                if (tags.back() == tagname.substr(1))
-                {
-                    // remove the last tagname from the vector
-                    tags.pop_back();
-                    
-                    // revert to previous color   
-                    if (!tags.empty())
-                    {
-                        auto it = config.find(tags.back());
-                        cout << it->second;                            
-                    }
-
-                } else {                                // invalid nesting of tags
-                    cerr << DEFAULT_COLOR << "\n\nERROR:  Invalid nesting of tags.  Exiting program." << endl;
-                    exit(1);
-                } 
-            } 
-            
-        } //END: for loop
-
-
-        if (!is_white_space(line) && !ct_flag) 
-            //cout << " ?FLAG? " << ct_flag << " length: " << suffix.length() << "line " << lineNum << "   "<< suffix << endl;
-            cout << suffix << endl;
-
-        //if (!is_white_space(line) && !ct_flag && suffix.length() == 0)
-            //cout << lineNum << ":" << suffix; 
-            //cout << suffix; 
-
-        // no tags found in line
-        if (!regex_search(line, m, reg_tag))
-        {
-            if (!ct_flag)
-                cout << line << endl;
-
-            if (ct_flag && !is_white_space(line)) 
-            {
-                cerr << DEFAULT_COLOR << "\n\nERROR:  Text found after </text> tag.  Exiting program." << endl;
-                exit(1);
-            }
-        } 
-
-    } // END: while loop
+    process_input(config, tags, word, ot_flag, ct_flag, lineNum);
 
     // check if </text> tag found after reading in all input text
     if (!ct_flag) {
