@@ -231,10 +231,8 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
         // handle lines without any tags
         if (!regex_search(line, m, reg_tag))
         {
-            if (!ct_flag) {
-                replace_entity(line);
-                cout << line << endl;
-            }
+            if (!ct_flag)
+                cout << replace_entity(line) << endl;
             
             if (ct_flag && !is_white_space(line))
             {
@@ -251,8 +249,7 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
             suffix = m.suffix();
             string tagname = m.str(1);
 
-            replace_entity(prefix);
-            cout << prefix;
+            cout << replace_entity(prefix);
             
             if (tagname[0] != '/')                      // it is a start tag 
             {
@@ -325,12 +322,10 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
 
         if (!ct_flag && !is_white_space(line))
         {
-            replace_entity(suffix);
+            cout << replace_entity(suffix); 
 
             if (suffix.length() != 0) 
-                cout << suffix << endl;
-            else
-                cout << suffix; 
+                cout << endl;
         }
 
     } // END: while loop
