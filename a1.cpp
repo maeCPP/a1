@@ -15,6 +15,7 @@
 #define  DEFAULT_COLOR "\033[39;49m"
  using   namespace std;
 
+
 /**
  * Returns true if string s (which represents a tag) comprises of 
  * only alphanumeric characters; returns false otherwise.
@@ -28,6 +29,7 @@ bool is_valid_tag(const string& s)
     }
     return true;
 }
+
 
 /**
  * Returns true if string s comprises entirely of white space;
@@ -43,6 +45,7 @@ bool is_white_space(const string& s)
     return true;
 }
 
+
 /**
  *  Replaces the \\e part of an ansi code with \033 
  */
@@ -51,6 +54,22 @@ void replace_ecode(string& ansi)
     if (ansi.substr(0,2) == "\\e")
         ansi = '\033' + ansi.substr(2);
 }
+
+
+/**
+ *  Searches string s for &lt; and &gt; and replaces them with < and >, respectively, if found.
+ *  Returns the string.
+ */
+string replace_entity(string& s) {
+    regex reg_lt(R"(&lt;)");
+    regex reg_gt(R"(&gt;)");
+
+    s = regex_replace(s, reg_lt, "<");
+    s = regex_replace(s, reg_gt, ">");
+
+    return s;
+}
+
 
 /**
  * First checks command-line arguments for configuration file name.  If more 
@@ -127,6 +146,7 @@ map<string, string> load_config(int argc, char* argv[])
     return config;
 }
 
+
 /**
  * Reads in and processes the first word of input text.  
  * 
@@ -156,6 +176,7 @@ void process_first_word(map<string, string>& config, vector<string>& tags, strin
     }
 }
 
+
 /**
  * Reads in and processes the remaining input text line-by-line and outputs
  * the text to standard out if no errors found.
@@ -173,6 +194,8 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
         string prefix, suffix;
         smatch m;
         regex reg_tag(R"(<(.+?)>)");
+        regex reg_lt(R"(&lt;)");
+        regex reg_gt(R"(&gt;)");
 
         lineNum++;
         //cout << lineNum << ": ";
@@ -183,8 +206,10 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
         // no tags found in line
         if (!regex_search(line, m, reg_tag))
         {
-            if (!ct_flag)
+            if (!ct_flag) {
+                replace_entity(line);
                 cout << line << endl;
+            }
             
             if (ct_flag && !is_white_space(line))
             {
@@ -198,6 +223,8 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
             prefix = m.prefix();
             suffix = m.suffix();
             string tagname = m.str(1);
+
+            replace_entity(prefix);
 
             cout << prefix;
             
@@ -247,24 +274,7 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                         }
                     //}
                 } 
-                    
 
-                
-
-
-
-                //if (ct_flag) {
-                //    cerr << DEFAULT_COLOR << "\n\nERROR99:  Text found after </text> tag.  Exiting program." << endl;
-                //    exit(1);
-                //}
-
-                //if (ct_flag && !is_white_space(suffix))
-                //{
-                //    cerr << DEFAULT_COLOR << "\n\nERROR3:  Text found after </text> tag.  Exiting program." << endl;
-                //    exit(1);
-                //}
-                
-                // check if tagname is the last element of the vector
                 //if (!tags.empty()) {
                 if (tags.back() == tagname.substr(1))
                 {
@@ -283,7 +293,7 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                     cerr << DEFAULT_COLOR << "\n\nERROR:  Invalid nesting of tags.  Exiting program." << endl;
                     exit(1);
                 }
-            //}
+            
             }
 
             if (ct_flag && !is_white_space(suffix)) 
@@ -292,18 +302,25 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                 cerr << DEFAULT_COLOR << "\n\nERROR77:  Text found after </text> tag.  Exiting program." << endl;
                 exit(1);
             }
+
+            if (!ct_flag && is_white_space(suffix))
+                cout << endl;
             
         } //END: for loop
 
 
-        if (!is_white_space(line) && !ct_flag) 
-            //cout << " ?FLAG? " << ct_flag << " length: " << suffix.length() << "line " << lineNum << "   "<< suffix << endl;
-            cout << suffix << endl;
+        if (!ct_flag && !is_white_space(line))
+        {
+            replace_entity(suffix);
 
-        //if (!is_white_space(line) && !ct_flag && suffix.length() == 0)
-            //cout << lineNum << ":" << suffix; 
-            //cout << suffix; 
-
+            if (suffix.length() != 0) 
+                //cout << " ?FLAG? " << ct_flag << " length: " << suffix.length() << "line " << lineNum << "   "<< suffix << endl;
+                // cout << "!" << lineNum << ": " << suffix << endl;
+                cout << suffix << endl;
+            else
+                //cout << lineNum << ":"  << suffix; 
+                cout << suffix; 
+        }
 
     } // END: while loop
 

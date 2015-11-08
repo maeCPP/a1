@@ -4,10 +4,15 @@ questions.  Time allowed:  <underline>80 minutes</underline>.
 
 what if i just have test without any tags?
 
+if 2 &lt; 3, then everything's fine
+if 3 &gt; 2, then everything's <bold>fine</bold>
+HOWEVER IF<italic> 4 &lt; 5  or 5 &gt; 4
+</italic> then is that okay &lt;?
+ 
 Correct:  this <bold> is a <italic>short</italic> simple </bold> test.</text>
 
-    
-
+    <tag>
+  
 
  
 
