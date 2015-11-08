@@ -60,6 +60,34 @@ void replace_ecode(string& ansi)
  *  Searches string s for &lt; and &gt; and replaces them with < and >, respectively, if found.
  *  Returns the string.
  */
+void match_count(string& s, size_t lineNum) {
+    size_t lt_count = 0;
+    size_t gt_count = 0;
+
+    //cout << lineNum << ": " << s << endl;
+
+    for (size_t i = 0; i < s.size(); i++) {
+        if (s[i] == '<')
+            lt_count++;
+        if (s[i] == '>')
+            gt_count++;
+    }
+
+    if (lt_count != gt_count)
+    {
+        cerr << DEFAULT_COLOR << "\n\nERROR on line " << lineNum 
+             << ":  Did not find equal number of '<' and '>' on same line." << endl;
+        exit(1);
+    }
+    //cout << "     <: " << lt_count << " >: " << gt_count << endl;
+}
+
+
+
+/**
+ *  Searches string s for &lt; and &gt; and replaces them with < and >, respectively, if found.
+ *  Returns the string.
+ */
 string replace_entity(string& s) {
     regex reg_lt(R"(&lt;)");
     regex reg_gt(R"(&gt;)");
@@ -165,7 +193,7 @@ void process_first_word(map<string, string>& config, vector<string>& tags, strin
     if (word.substr(0,6) != "<text>") 
     {
         cerr << "\n\nERROR:  Input text does not start with <text> tag.  Exiting program." << endl;
-         exit(1);
+        exit(1);
     } else {
         tags.push_back("text");
         //cout << "\033[0;33m" << "<text> added to vector.  size of vector: " << tags.size() << endl;   
@@ -194,14 +222,14 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
         string prefix, suffix;
         smatch m;
         regex reg_tag(R"(<(.+?)>)");
-        regex reg_lt(R"(&lt;)");
-        regex reg_gt(R"(&gt;)");
 
         lineNum++;
         //cout << lineNum << ": ";
 
         if (lineNum == 1)
             line = word + line;
+
+        match_count(line, lineNum);
 
         // no tags found in line
         if (!regex_search(line, m, reg_tag))
@@ -213,7 +241,8 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
             
             if (ct_flag && !is_white_space(line))
             {
-                cerr << DEFAULT_COLOR << "\n\nERROR2:  Text found after </text> tag.  Exiting program." << endl;
+                cerr << DEFAULT_COLOR << "\n\nERROR2 on line " << lineNum 
+                     << ":  Text found after </text> tag.  Exiting program." << endl;
                 exit(1);
             }
         }
@@ -234,7 +263,8 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                 // check that there is no duplication of <text> tag
                 if (tagname == "text" && ot_flag)
                 {  
-                    cerr << DEFAULT_COLOR << "\n\nERROR:  duplicate <text> tag.  Exiting program." << endl;
+                    cerr << DEFAULT_COLOR << "\n\nERROR on line " << lineNum 
+                     << ":  duplicate <text> tag.  Exiting program." << endl;
                     exit(1);
                 }
 
@@ -246,7 +276,8 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                     tags.push_back(tagname);
                     //cout << "\033[0;33m" << tagname << " added to vector.  size of vector: " << tags.size() << endl;   
                 } else {
-                    cerr << DEFAULT_COLOR << "\n\nERROR:  <" << tagname << "> is an invalid tag.  Exiting program." << endl;
+                    cerr << DEFAULT_COLOR << "\n\nERROR on line " << lineNum 
+                     << ":  <" << tagname << "> is an invalid tag.  Exiting program." << endl;
                     exit(1);
                 }
 
@@ -269,7 +300,8 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                         {
                                 ct_flag = true;
                         } else {
-                            cerr << DEFAULT_COLOR << "\n\nERROR1:  Text found after </text> tag.  Exiting program." << endl;
+                            cerr << DEFAULT_COLOR << "\n\nERROR1 on line " << lineNum 
+                                 << ":  Text found after </text> tag.  Exiting program." << endl;
                             exit(1);
                         }
                     //}
@@ -290,7 +322,8 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                     }
 
                 } else {                                // invalid nesting of tags
-                    cerr << DEFAULT_COLOR << "\n\nERROR:  Invalid nesting of tags.  Exiting program." << endl;
+                    cerr << DEFAULT_COLOR << "\n\nERROR on line " << lineNum 
+                         << ":  Invalid nesting of tags.  Exiting program." << endl;
                     exit(1);
                 }
             
@@ -298,8 +331,9 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
 
             if (ct_flag && !is_white_space(suffix)) 
             {
-                cout << "line #: " << lineNum << " line size: " << line.length() << " suffix size: " << suffix.length() << endl;
-                cerr << DEFAULT_COLOR << "\n\nERROR77:  Text found after </text> tag.  Exiting program." << endl;
+                //cout << "line #: " << lineNum << " line size: " << line.length() << " suffix size: " << suffix.length() << endl;
+                cerr << DEFAULT_COLOR << "\n\nERROR77 on line " << lineNum 
+                     << ":  Text found after </text> tag.  Exiting program." << endl;
                 exit(1);
             }
 
