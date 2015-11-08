@@ -60,13 +60,13 @@ void replace_ecode(string& ansi)
  *  Searches string s for &lt; and &gt; and replaces them with < and >, respectively, if found.
  *  Returns the string.
  */
-void match_count(string& s, size_t lineNum) {
+void match_lt_gt_count(const string& s, const size_t& lineNum)
+{
     size_t lt_count = 0;
     size_t gt_count = 0;
 
-    //cout << lineNum << ": " << s << endl;
-
-    for (size_t i = 0; i < s.size(); i++) {
+    for (size_t i = 0; i < s.size(); i++)
+    {
         if (s[i] == '<')
             lt_count++;
         if (s[i] == '>')
@@ -79,7 +79,6 @@ void match_count(string& s, size_t lineNum) {
              << ":  Did not find equal number of '<' and '>' on same line." << endl;
         exit(1);
     }
-    //cout << "     <: " << lt_count << " >: " << gt_count << endl;
 }
 
 
@@ -88,13 +87,13 @@ void match_count(string& s, size_t lineNum) {
  *  Searches string s for &lt; and &gt; and replaces them with < and >, respectively, if found.
  *  Returns the string.
  */
-string replace_entity(string& s) {
+string replace_entity(string& s)
+{
     regex reg_lt(R"(&lt;)");
     regex reg_gt(R"(&gt;)");
 
     s = regex_replace(s, reg_lt, "<");
     s = regex_replace(s, reg_gt, ">");
-
     return s;
 }
 
@@ -187,7 +186,6 @@ map<string, string> load_config(int argc, char* argv[])
  */
 void process_first_word(map<string, string>& config, vector<string>& tags, string& word, bool& ot_flag) {
 
-    // get first word and check that it is the <text> tag
     cin >> word;
 
     if (word.substr(0,6) != "<text>") 
@@ -195,8 +193,7 @@ void process_first_word(map<string, string>& config, vector<string>& tags, strin
         cerr << "\n\nERROR:  Input text does not start with <text> tag.  Exiting program." << endl;
         exit(1);
     } else {
-        tags.push_back("text");
-        //cout << "\033[0;33m" << "<text> added to vector.  size of vector: " << tags.size() << endl;   
+        tags.push_back("text"); 
         ot_flag = true;
         word = word.substr(6);
         auto it = config.find("text");
@@ -224,14 +221,14 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
         regex reg_tag(R"(<(.+?)>)");
 
         lineNum++;
-        //cout << lineNum << ": ";
 
         if (lineNum == 1)
             line = word + line;
 
-        match_count(line, lineNum);
+        // check that for each '<' there is a matching '>' and vice versa
+        match_lt_gt_count(line, lineNum);
 
-        // no tags found in line
+        // handle lines without any tags
         if (!regex_search(line, m, reg_tag))
         {
             if (!ct_flag) {
@@ -247,6 +244,7 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
             }
         }
 
+        // handle lines with tags
         for (auto it = line.cbegin(), end = line.cend(); regex_search(it, end, m, reg_tag); it = m.suffix().first) 
         {
             prefix = m.prefix();
@@ -254,12 +252,10 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
             string tagname = m.str(1);
 
             replace_entity(prefix);
-
             cout << prefix;
             
             if (tagname[0] != '/')                      // it is a start tag 
             {
-                //cout << "<" << tagname << ">" << endl;
                 // check that there is no duplication of <text> tag
                 if (tagname == "text" && ot_flag)
                 {  
@@ -273,46 +269,31 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                 if (it != config.end())                 // tag is found
                 {           
                     cout << it->second;
-                    tags.push_back(tagname);
-                    //cout << "\033[0;33m" << tagname << " added to vector.  size of vector: " << tags.size() << endl;   
+                    tags.push_back(tagname);  
                 } else {
                     cerr << DEFAULT_COLOR << "\n\nERROR on line " << lineNum 
                      << ":  <" << tagname << "> is an invalid tag.  Exiting program." << endl;
                     exit(1);
                 }
 
-                //cout << endl;
-                //for (auto v : tags) {
-                //    cout << "<" << v << ">, ";
-                //}
-                //cout << endl;
-
             } else {                                    // it is an end tag
 
-                if (tagname == "/text") {
-
-                    //if (ct_flag)
-                    //{
-                    //    cerr << DEFAULT_COLOR << "\n\nERROR:  duplicate </text> tag.  Exiting program." << endl;
-                    //    exit(1);
-                    //}  else {
-                        if (is_white_space(suffix)) 
-                        {
-                                ct_flag = true;
-                        } else {
-                            cerr << DEFAULT_COLOR << "\n\nERROR1 on line " << lineNum 
-                                 << ":  Text found after </text> tag.  Exiting program." << endl;
-                            exit(1);
-                        }
-                    //}
+                if (tagname == "/text")
+                {
+                    if (is_white_space(suffix)) 
+                    {
+                            ct_flag = true;
+                    } else {
+                        cerr << DEFAULT_COLOR << "\n\nERROR1 on line " << lineNum 
+                             << ":  Text found after </text> tag.  Exiting program." << endl;
+                        exit(1);
+                    }
                 } 
 
-                //if (!tags.empty()) {
                 if (tags.back() == tagname.substr(1))
                 {
                     // remove the last tagname from the vector
                     tags.pop_back();
-                    //cout << endl << "\033[0;33m" << tagname << " removed from vector.  size of vector: " << tags.size() << endl; 
                     
                     // revert to previous color   
                     if (!tags.empty())
@@ -331,7 +312,6 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
 
             if (ct_flag && !is_white_space(suffix)) 
             {
-                //cout << "line #: " << lineNum << " line size: " << line.length() << " suffix size: " << suffix.length() << endl;
                 cerr << DEFAULT_COLOR << "\n\nERROR77 on line " << lineNum 
                      << ":  Text found after </text> tag.  Exiting program." << endl;
                 exit(1);
@@ -348,11 +328,8 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
             replace_entity(suffix);
 
             if (suffix.length() != 0) 
-                //cout << " ?FLAG? " << ct_flag << " length: " << suffix.length() << "line " << lineNum << "   "<< suffix << endl;
-                // cout << "!" << lineNum << ": " << suffix << endl;
                 cout << suffix << endl;
             else
-                //cout << lineNum << ":"  << suffix; 
                 cout << suffix; 
         }
 
@@ -381,7 +358,8 @@ int main(int argc, char* argv[])
 
     // check if </text> tag found after reading in all input text
     if (!ct_flag) {
-        cerr << DEFAULT_COLOR << "ERROR:  No </text> tag found.  Exiting program." << endl;
+        cerr << DEFAULT_COLOR << "ERROR on line " << lineNum
+             << ":  No </text> tag found.  Exiting program." << endl;
         exit(1);
     }
 
