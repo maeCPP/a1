@@ -275,7 +275,7 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
 
             } else {                                    // it is an end tag
 
-                if (tagname == "/text")
+                if (tagname == "/text")                 // tag is </text>
                 {
                     if (is_white_space(suffix)) 
                     {
@@ -287,9 +287,10 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                     }
                 } 
 
+                // check that close tag matches the last tag in the tags vector
                 if (tags.back() == tagname.substr(1))
                 {
-                    // remove the last tagname from the vector
+                    // remove the last tagname from the tags vector
                     tags.pop_back();
                     
                     // revert to previous color   
@@ -299,9 +300,9 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
                         cout << it->second;                            
                     }
 
-                } else {                                // invalid nesting of tags
+                } else {                                // tags don't match
                     cerr << DEFAULT_COLOR << "\n\nERROR on line " << lineNum 
-                         << ":  Invalid nesting of tags.  Exiting program." << endl;
+                         << ":  Mismatching tags.  Exiting program." << endl;
                     exit(1);
                 }
             
@@ -319,7 +320,7 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
             
         } //END: for loop
 
-
+        // output the last suffix
         if (!ct_flag && !is_white_space(line))
         {
             cout << replace_entity(suffix); 
@@ -348,10 +349,10 @@ int main(int argc, char* argv[])
     // read in the first word and handle any related errors
     process_first_word(config, tags, word, ot_flag);
 
-    // process all the rest
+    // process all the rest and handle errors
     process_input(config, tags, word, ot_flag, ct_flag, lineNum);
 
-    // check if </text> tag found after reading in all input text
+    // final error check to ensure </text> tag found after reading in all input text
     if (!ct_flag) {
         cerr << DEFAULT_COLOR << "ERROR on line " << lineNum
              << ":  No </text> tag found.  Exiting program." << endl;
