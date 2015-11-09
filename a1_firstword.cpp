@@ -15,43 +15,6 @@
 #define  DEFAULT_COLOR "\033[39;49m"
  using   namespace std;
 
-// function prototypes
-bool is_valid_tag(const string& s);
-bool is_white_space(const string& s);
-void match_lt_gt_count(const string& s, const size_t& lineNum);
-void replace_ecode(string& ansi);
-string replace_entity(string& s);
-map<string, string> load_config(int argc, char* argv[]);
-void process_first_word(map<string, string>& config, vector<string>& tags, string& word, bool& ot_flag);
-void process_input(map<string, string>& config, vector<string>& tags, string& word, bool& ot_flag, bool& ct_flag, size_t& lineNum);
-
-
-int main(int argc, char* argv[]) 
-{
-    string word;
-    map<string, string> config;
-    vector<string> tags;
-
-    bool ot_flag = false;               // true if open text tag  <text>  found
-    bool ct_flag = false;               // true if close text tag </text> found
-    size_t lineNum = 0;                 // line number
-
-    // load configuration file
-    config = load_config(argc, argv);
-
-    // read in the first word and handle any related errors
-    process_first_word(config, tags, word, ot_flag);
-
-    // process all the rest and handle errors
-    process_input(config, tags, word, ot_flag, ct_flag, lineNum);
-
-    // final error check to ensure </text> tag found after reading in all input text
-    if (!ct_flag) {
-        cerr << DEFAULT_COLOR << "ERROR on line " << lineNum
-             << ":  No </text> tag found.  Exiting program." << endl;
-        exit(1);
-    }
-}
 
 /**
  * Returns true if string s (which represents a tag) comprises of 
@@ -117,6 +80,7 @@ void match_lt_gt_count(const string& s, const size_t& lineNum)
         exit(1);
     }
 }
+
 
 
 /**
@@ -222,7 +186,7 @@ map<string, string> load_config(int argc, char* argv[])
  */
 void process_first_word(map<string, string>& config, vector<string>& tags, string& word, bool& ot_flag) {
 
-    cin >> word;
+    //cin >> word;
 
     if (word.substr(0,6) != "<text>") 
     {
@@ -231,7 +195,7 @@ void process_first_word(map<string, string>& config, vector<string>& tags, strin
     } else {
         tags.push_back("text"); 
         ot_flag = true;
-        word = word.substr(6);
+        //word = word.substr(6);
         auto it = config.find("text");
         cout << it->second;                   
     }
@@ -248,7 +212,7 @@ void process_first_word(map<string, string>& config, vector<string>& tags, strin
  */
 void process_input(map<string, string>& config, vector<string>& tags, string& word, bool& ot_flag, bool& ct_flag, size_t& lineNum) {
 
-    string line;
+    string line, firstword;
 
     while (getline(cin, line)) 
     {
@@ -258,8 +222,38 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
 
         lineNum++;
 
+        if (!ot_flag && is_white_space(line) )
+        {
+            cerr << DEFAULT_COLOR << "\n\nERROR on line " << lineNum 
+                 << ":  <text> tag not found on first line.  Exiting program." << endl;
+            exit(1);
+        }
+
         if (lineNum == 1)
-            line = word + line;
+        {
+            size_t pos;
+            for (size_t i = 0; i < line.size(); i++) {
+                if (line[i] == '>')
+                    pos = i;
+            }
+
+            istringstream iss(line);
+            if (iss >> firstword) {
+
+                //size_t firstword_length = firstword.length();
+
+                line = line.substr(pos+1);
+
+                //cout << firstword << " " << firstword_length << endl;
+                //cout << line << endl;
+                //cout << firstword << line << endl << endl;
+                process_first_word(config, tags, firstword, ot_flag);
+            }
+            cout << endl << endl << line << endl; 
+            //line = firstword + line;
+            //cout << line << endl;
+
+        }
 
         // check that for each '<' there is a matching '>' and vice versa
         match_lt_gt_count(line, lineNum);
@@ -369,3 +363,30 @@ void process_input(map<string, string>& config, vector<string>& tags, string& wo
 
 }
 
+int main(int argc, char* argv[]) 
+{
+    string word;
+    map<string, string> config;
+    vector<string> tags;
+
+    bool ot_flag = false;               // true if open text tag  <text>  found
+    bool ct_flag = false;               // true if close text tag </text> found
+    size_t lineNum = 0;                 // line number
+
+    // load configuration file
+    config = load_config(argc, argv);
+
+    // read in the first word and handle any related errors
+    // process_first_word(config, tags, word, ot_flag);
+
+    // process all the rest and handle errors
+    process_input(config, tags, word, ot_flag, ct_flag, lineNum);
+
+    // final error check to ensure </text> tag found after reading in all input text
+    if (!ct_flag) {
+        cerr << DEFAULT_COLOR << "ERROR on line " << lineNum
+             << ":  No </text> tag found.  Exiting program." << endl;
+        exit(1);
+    }
+
+}
