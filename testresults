@@ -1,0 +1,23 @@
+INVALID TESTS       PASS?       PROBLEM
+------------------------------------------------------------------------
+invalid-begin       yes         
+invalid-char                    line 10 has > with no corresponding <
+invalid-char2                   line 1 has < but no > 
+invalid-end         yes         non-whitespace found in line 23 after </text> tag in line 15
+invalid-match       yes
+invalid-match2      yes
+invalid-match3      yes
+invalid-name        yes
+invalid-name2       yes
+
+
+VALID TESTS         MATCH?
+---------------------------
+nested              yes
+nested2             yes
+
+non-nested          yes
+non-nested2         yes
+non-nested3         yes
+
+entity              yes
